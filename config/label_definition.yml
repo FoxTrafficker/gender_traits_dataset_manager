@@ -1,0 +1,28 @@
+typical_male:
+  - male_hand
+  - animal:
+      - dog
+      - horse
+      - pig
+  - toned_male
+  - goblin
+  - fat_man
+  - old_man
+  - muscular_male
+  - dark_skin_male:
+      - brown
+      - gray
+      - black
+
+untypical_male:
+  - untypical_hand
+  - shota
+  - otokonoko
+
+female_only:
+  - female_hand
+
+ambiguous:
+  - ambiguous_hand
+  - unfocused_shadow
+  - ambiguous_shota_or_toned_male

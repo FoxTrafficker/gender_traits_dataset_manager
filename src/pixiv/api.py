@@ -21,19 +21,11 @@ class PixivAPI(AppPixivAPI):
         config.read(self.config_path)
         self.auth(refresh_token=config['PIXIV']['refresh_token'])
 
-    def _download(self, url):
+    def download_to_memory(self, url):
         file = io.BytesIO()
         self.download(url, fname=file)
         file.seek(0)
         return file
-
-    def download_artwork(self, artwork_id: str | int):
-        metadata = self.get_metadata(artwork_id)
-
-        images = [self._download(page.image_urls['original']) for page in metadata.meta_pages] if metadata.meta_pages else [
-            self._download(metadata.meta_single_page.get('original_image_url') or metadata.image_urls.get('original'))]
-
-        return metadata, images
 
     def get_metadata(self, artwork_id: str | int) -> AppPixivAPI.illust_detail:
         return self.illust_detail(artwork_id).illust

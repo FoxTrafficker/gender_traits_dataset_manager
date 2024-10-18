@@ -13,11 +13,10 @@ from tqdm import tqdm
 
 
 class MongoDBAPI:
-    def __init__(self):
+    def __init__(self, db_name: str = 'gender_traits_dataset', collection_name: str = 'fs'):
         self.client = MongoClient("mongodb://localhost:27017/")
-        self.db = self.client['gender_traits_dataset']
-        self.fs = gridfs.GridFS(self.db)
-        self.collection = self.db['fs.files']
+        self.db = self.client[db_name]
+        self.collection = self.db[collection_name]
 
     def backup_collection(self, backup_file):
         with open(backup_file, 'w', encoding='utf-8') as f:
@@ -34,6 +33,10 @@ class MongoDBAPI:
                 doc = json.loads(line)
                 self.collection.insert_one(doc)
         print(f"集合恢复完成，数据来自: {backup_file}")
+
+    def insert_record(self, record):
+        # todo 首先检查是否已经存在
+        return self.collection.insert_one(record)
 
 
 if __name__ == '__main__':

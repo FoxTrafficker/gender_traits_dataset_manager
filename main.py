@@ -1,4 +1,4 @@
-from src.minio.MinioClientManager import MinioDatasetManager
+from src._minio.MinioClientManager import MinioDatasetManager
 from src.pixiv.api import PixivAPI
 
 

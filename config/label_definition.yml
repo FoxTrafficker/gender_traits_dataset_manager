@@ -23,6 +23,7 @@ female_only:
   - female_hand
 
 ambiguous:
+# 这里的ambiguous意味着图像本身就不明确，而不意味着这张图对于模型难以识别。
   - ambiguous_hand
   - unfocused_shadow
   - ambiguous_shota_or_toned_male

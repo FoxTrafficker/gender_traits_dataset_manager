@@ -14,7 +14,7 @@ from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 config = configparser.ConfigParser()
-config.read("./config.ini")
+config.read("config/config.ini")
 
 
 def oauth_pkce(transform):

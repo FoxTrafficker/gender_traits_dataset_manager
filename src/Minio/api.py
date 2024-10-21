@@ -1,4 +1,3 @@
-import os
 import configparser
 from minio import Minio
 from minio.error import S3Error
@@ -34,11 +33,17 @@ class MinioAPI:
         :param bucket_name: 要上传的目标 bucket 名称。
         :param data: 要上传的字节流（BytesIO 对象）。
         :param object_name: 在 MinIO 中保存的对象名称。
-        :param object_id: 从 MongoDB 获得的用于查询的 objectid。
+        :param object_id: 从 MongoDB 获得的用于查询的 object_id。
         """
         self.ensure_bucket_exists(bucket_name)
 
-        # todo 首先检查是否已经存在
+        try:
+            self.client.stat_object(bucket_name, object_name)
+            # print(f"Object '{object_name}' already exists in bucket '{bucket_name}'.")
+            return
+        except S3Error as e:
+            if e.code != 'NoSuchKey':
+                raise Exception(f"Failed to check if object exists. Error: {e}")
 
         metadata = {'object_id': object_id}
 
@@ -47,6 +52,16 @@ class MinioAPI:
         except S3Error as e:
             print(f"Failed to upload data to bucket '{bucket_name}'. Error: {e}")
 
-# 示例用法
-# minio_api = MinioAPI()
-# minio_api.upload_file('my-bucket', 'path/to/local/file.txt', object_id='613b1a7f13d94e46b8123eaf')
+    def fetch_file(self, bucket_name: str, object_name: str):
+        response = self.client.get_object(bucket_name, object_name)
+
+        file = BytesIO()
+        for data in response.stream(32 * 1024):
+            file.write(data)
+
+        file.seek(0)
+
+        response.close()
+        response.release_conn()
+
+        return file

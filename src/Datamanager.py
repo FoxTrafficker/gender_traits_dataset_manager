@@ -1,9 +1,11 @@
-from src.pixiv.api import PixivAPI
-from src.mongodb.api import MongoDBAPI
-from src._minio.api import MinioAPI
+from src.Pixiv.api import PixivAPI
+from src.Mongodb.api import MongoDBAPI
+from src.Minio.api import MinioAPI
 from tqdm import tqdm
 from urllib.parse import urlparse
 from pathlib import Path
+import time
+from datetime import datetime, timedelta
 
 
 class BaseDataManager:
@@ -12,6 +14,9 @@ class BaseDataManager:
         self.minio = MinioAPI(config_path=config_path)
 
     def store_data(self, *args):
+        pass
+
+    def valid_dataset(self, *args):
         pass
 
 
@@ -27,7 +32,7 @@ class PixivDataManager(BaseDataManager):
         """
         return self.pixiv.download_to_memory(url)
 
-    def download_artwork(self, artwork_id: str | int):
+    def download_artwork(self, artwork_id: int):
         """
         artwork_id: the id of an artwork.
         """
@@ -40,7 +45,7 @@ class PixivDataManager(BaseDataManager):
 
         return metadata, images
 
-    def store_data(self, metadata, images, note: str = None):
+    def store_data(self, metadata, images, note=None):
         for url, img in images.items():
             img_name = Path(urlparse(url).path).name
 
@@ -61,14 +66,61 @@ class PixivDataManager(BaseDataManager):
             object_id = self.mongodb.insert_record(record)
             self.minio.upload_file(bucket_name="pixiv", data=img, object_name=img_name, object_id=object_id)
 
-    def fetch_data(self):
-        # todo 首先检查数据库中是否存在
-        # todo 如果存在则直接从数据库中提取，如果不存在则从链接中获取。
+    def check_exist(self, artwork_id: int):
+        record = self.mongodb.collection.find_one({'metadata.id': artwork_id})
+        return bool(record)
+
+    def fetch_data(self, artwork_id: int):
+        records = self.mongodb.collection.find({'metadata.id': artwork_id}).to_list()
+        if len(records) > 0:
+            metadata = records[0]['metadata']
+            images = {r['url']: self.minio.fetch_file(bucket_name="pixiv", object_name=r['image_name']) for r in records}
+            source = 'database'
+        else:
+            metadata, images = self.download_artwork(artwork_id)
+            source = 'pixiv'
+
+        return metadata, images, source
+
+    def valid_dataset(self):
+        # todo 验证单一性
+        # todo mongodb中url不应该重复，artwork_id+page_count不应该重复。
+        # todo minio中相图像名不应该重复，object_id不应该重复。
+
+        # todo 验证一致性
+        # todo mongodb中出现的元数据的图像应该全部在minio中可以找到，且object_id应该一致。
+        # todo minio中出现的图像应该可以在minio中找到元数据和标签。
+
+        # todo 验证完整性
+        # todo mongodb中字段应该完整。同一个artwork的page应该完整。
         pass
 
 
-if __name__ == '__main__':
+def main():
     pdm = PixivDataManager('../config/config.ini')
-    artwork_ids = pdm.pixiv.get_R18_ranking('2024-10-17')
-    for artwork_id in tqdm(artwork_ids):
-        pdm.store_data(*pdm.download_artwork(str(artwork_id)))
+    start_date = datetime.strptime("2021-02-21", "%Y-%m-%d").date()
+    end_date = datetime.today().date()
+    current_date = start_date
+
+    while start_date < end_date:
+        print(datetime.strftime(current_date, "%Y-%m-%d"))
+
+        artwork_ids = pdm.pixiv.get_R18_ranking(datetime.strftime(current_date, "%Y-%m-%d"))
+
+        for artwork_id in tqdm(artwork_ids):
+            try:
+                metadata, images, source = pdm.fetch_data(artwork_id=artwork_id)
+            except Exception as e:
+                print(e, 'try again')
+                metadata, images, source = pdm.fetch_data(artwork_id=artwork_id)
+
+            if source == 'pixiv':
+                pdm.store_data(metadata, images, note={"mode": "daily_r18", "content": "illust", "date": datetime.strftime(current_date, "%Y%m%d")})
+                time.sleep(5)
+        time.sleep(300)
+
+        current_date += timedelta(days=1)
+
+
+if __name__ == '__main__':
+    main()

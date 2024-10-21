@@ -1,5 +1,5 @@
-from src._minio.MinioClientManager import MinioDatasetManager
-from src.pixiv.api import PixivAPI
+from src.Minio.MinioClientManager import MinioDatasetManager
+from src.Pixiv.api import PixivAPI
 
 
 def test():

@@ -8,6 +8,7 @@ from pixivpy3 import *
 from pathlib import Path
 from PIL import Image
 from typing import List, Dict
+import time
 
 
 class PixivAPI(AppPixivAPI):
@@ -31,7 +32,12 @@ class PixivAPI(AppPixivAPI):
         return self.illust_detail(artwork_id).illust
 
     def get_R18_ranking(self, date: str = '2024-10-13') -> set[int]:
-        return set(artwork.id for offset in range(0, 100, 20) for artwork in self.illust_ranking('day_r18', offset=offset, date=date).illusts)
+        ranking_set = set()
+        for offset in range(0, 100, 30):
+            response = self.illust_ranking('day_r18', offset=offset, date=date)
+            ranking_set.update(artwork.id for artwork in response.illusts)
+            time.sleep(5)
+        return ranking_set
 
 
 if __name__ == '__main__':

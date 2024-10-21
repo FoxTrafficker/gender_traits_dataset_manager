@@ -15,12 +15,13 @@ typical_male:
       - black
 
 untypical_male:
-  - untypical_hand
+  - untypical_male_hand
   - shota
   - otokonoko
 
 female_only:
   - female_hand
+  - futanari
 
 ambiguous:
 # 这里的ambiguous意味着图像本身就不明确，而不意味着这张图对于模型难以识别。
